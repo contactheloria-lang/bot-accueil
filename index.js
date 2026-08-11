@@ -2,7 +2,11 @@ require("dotenv").config(); // Charge les variables du fichier .env
 
 const { Client, GatewayIntentBits, ActivityType } = require("discord.js");
 const express = require("express");
-const onboarding = require("./onboarding.js");
+
+// ⚠️ AJUSTE CE CHEMIN :
+// - Si onboarding.js est au même niveau que index.js : require("./onboarding.js")
+// - Si onboarding.js est dans un dossier src : require("./src/onboarding.js")
+const onboarding = require("./src/onboarding.js");
 
 // Initialisation du serveur Web pour Render
 const app = express();
@@ -29,6 +33,7 @@ const client = new Client({
 let joinsToday = 0;
 let lastResetDate = new Date().getDate();
 
+// Compteur de nouveaux membres
 client.on("guildMemberAdd", () => {
     const today = new Date().getDate();
     if (today !== lastResetDate) {
@@ -69,7 +74,8 @@ client.once("ready", () => {
     }, 15000);
 });
 
+// Lancement du système d'onboarding
 onboarding(client);
 
-// Connexion via la variable d'environnement
+// Connexion du bot
 client.login(process.env.DISCORD_TOKEN);
