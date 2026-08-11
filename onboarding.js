@@ -1,43 +1,68 @@
-const { 
-    EmbedBuilder, 
-    ActionRowBuilder, 
-    StringSelectMenuBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    PermissionFlagsBits, 
-    ComponentType 
+const {
+    EmbedBuilder,
+    ActionRowBuilder,
+    StringSelectMenuBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    PermissionFlagsBits,
+    ComponentType,
+    AttachmentBuilder
 } = require("discord.js");
+const path = require("path");
 
 const CONFIG = {
     CATEGORY_ID: "1534953439908593857",
-    LOGS_CHANNEL_ID: "1535026560896204922", // Salon logs staff
+    LOGS_CHANNEL_ID: "1535026560896204922",
+
     ROLE_ONBOARDING: "1532058943570837656",
+
     ROLES_MEMBER: [
-        "1532014889848143964", 
+        "1532014889848143964",
         "1532014895657128098"
     ],
+
     ROLES_NOTIFS: {
-        anim: "1532014836463177739",
-        sondage: "1532014839659237587",
-        webtv: "1532014842637058058",
-        partenaire: "1532014845963010119",
-        reseaux: "1532014849582829659",
-        annonces: "1532014852724363416"
+        anim: [
+            "1532014836463177739",
+            "1532014855698120794"
+        ],
+        sondage: [
+            "1532014839659237587",
+            "1532014855698120794"
+        ],
+        webtv: [
+            "1532014842637058058",
+            "1532014855698120794"
+        ],
+        partenaire: [
+            "1532014845963010119",
+            "1532014855698120794"
+        ],
+        reseaux: [
+            "1532014849582829659",
+            "1532014855698120794"
+        ],
+        annonces: [
+            "1532014852724363416",
+            "1532014855698120794"
+        ]
     },
+
     CEO: {
-        name: "HLR Logs",
-        avatar: "https://media.discordapp.net/attachments/1470095477344043028/1534954267712950403/ea76f024803be06f312ccd74350e221e.jpg?ex=6a76010f&is=6a74af8f&hm=8587e769fdfa7f8654f3e11e6d3a4ba7151e009a110f7a9cdaba4cdc62b22147&=&format=webp"
+        name: "HLR Logs"
     },
+
     DG: {
-        name: "HLR Raxeur",
-        avatar: "https://media.discordapp.net/attachments/1470095477344043028/1534954562169864466/image.png?ex=6a760155&is=6a74afd5&hm=76b8622a20dad4377c238695bba5ba57ba704f309903ca6cf7d8448b1f124662&=&format=webp&quality=lossless"
-    },
-    LOGO_HELORIA: "https://media.discordapp.net/attachments/1470095477344043028/1534942851065053214/087b2b1d-cbb9-427f-82ea-567a0dfb2ef1_1.png?ex=6a75f66d&is=6a74a4ed&hm=8e3f870e66bbdde8f25dc6dfbb53c8557fa1fb00845fee6c51e3226365c96bd7&=&format=webp&quality=lossless&width=1024&height=1024"
+        name: "HLR Raxeur"
+    }
 };
 
 module.exports = (client) => {
+
     client.on("guildMemberAdd", async (member) => {
+
         try {
+
             await member.roles.add(CONFIG.ROLE_ONBOARDING).catch(() => {});
 
             let selectedNotifs = [];
@@ -45,9 +70,15 @@ module.exports = (client) => {
             let selectedGame = "Non spécifié";
             let selectedIntent = "Non spécifié";
 
+            // Préparation des fichiers locaux
+            const ceoAvatarPath = path.join(__dirname, "../assets/ceo.png");
+            const dgAvatarPath = path.join(__dirname, "../assets/dg.png");
+            const logoPath = path.join(__dirname, "../assets/logo.png");
+
             const channel = await member.guild.channels.create({
                 name: `accueil-${member.user.username}`,
                 parent: CONFIG.CATEGORY_ID,
+
                 permissionOverwrites: [
                     {
                         id: member.guild.id,
@@ -65,32 +96,69 @@ module.exports = (client) => {
             });
 
             const timeoutAutoDelete = setTimeout(async () => {
-                if (channel) await channel.delete().catch(() => {});
+                if (channel) {
+                    await channel.delete().catch(() => {});
+                }
             }, 15 * 60 * 1000);
 
-            const webhookCEO = await channel.createWebhook({ name: CONFIG.CEO.name, avatar: CONFIG.CEO.avatar });
-            const webhookDG = await channel.createWebhook({ name: CONFIG.DG.name, avatar: CONFIG.DG.avatar });
+            // Webhooks créés directement avec les images locales
+            const webhookCEO = await channel.createWebhook({
+                name: CONFIG.CEO.name,
+                avatar: ceoAvatarPath
+            });
 
-            // 1. Présentation CEO
-            await webhookCEO.send({ content: `Bienvenue <@${member.id}> chez **Team HeLoRiA** !` });
+            const webhookDG = await channel.createWebhook({
+                name: CONFIG.DG.name,
+                avatar: dgAvatarPath
+            });
+
+            // =====================================================
+            // 1. PRÉSENTATION CEO
+            // =====================================================
+
+            await webhookCEO.send({
+                content: `Bienvenue <@${member.id}> chez **Team HeLoRiA** !`
+            });
+
+            // Pièce jointe pour le logo local dans l'embed
+            const logoAttachment = new AttachmentBuilder(logoPath, { name: "logo.png" });
 
             const embedPres = new EmbedBuilder()
                 .setColor("#FFFFFF")
                 .setTitle("Team HeLoRiA — Esport & Community")
-                .setThumbnail(CONFIG.LOGO_HELORIA)
+                .setThumbnail("attachment://logo.png")
                 .setDescription(
                     `Bienvenue parmi nous !\n\n` +
                     `Team HeLoRiA est une structure esport axée sur la compétition et la communauté.\n\n` +
                     `**Fondateur :** <@1431661348218998948>`
                 );
 
-            await webhookCEO.send({ embeds: [embedPres] });
+            await webhookCEO.send({
+                embeds: [embedPres],
+                files: [logoAttachment]
+            });
 
-            // 2. Question Intention
+            // =====================================================
+            // 2. QUESTION INTENTION
+            // =====================================================
+
             const intentRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId("intent_player").setLabel("Joueur / Compétition").setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId("intent_creator").setLabel("Créateur / Streamer").setStyle(ButtonStyle.Primary),
-                new ButtonBuilder().setCustomId("intent_community").setLabel("Communauté / Fan").setStyle(ButtonStyle.Secondary)
+
+                new ButtonBuilder()
+                    .setCustomId("intent_player")
+                    .setLabel("Joueur / Compétition")
+                    .setStyle(ButtonStyle.Primary),
+
+                new ButtonBuilder()
+                    .setCustomId("intent_creator")
+                    .setLabel("Créateur / Streamer")
+                    .setStyle(ButtonStyle.Primary),
+
+                new ButtonBuilder()
+                    .setCustomId("intent_community")
+                    .setLabel("Communauté / Fan")
+                    .setStyle(ButtonStyle.Secondary)
+
             );
 
             const msgIntent = await channel.send({
@@ -105,27 +173,44 @@ module.exports = (client) => {
             });
 
             intentCollector.on("collect", async (i) => {
+
                 await i.deferUpdate();
+
                 let intentAnswer = "";
+
                 if (i.customId === "intent_player") {
+
                     selectedIntent = "Joueur / Compétition";
                     intentAnswer = "Super ! On cherche toujours des compétiteurs déterminés.";
+
                 } else if (i.customId === "intent_creator") {
+
                     selectedIntent = "Créateur / Streamer";
                     intentAnswer = "Top ! La création de contenu est très importante pour nous.";
+
                 } else {
+
                     selectedIntent = "Communauté / Fan";
                     intentAnswer = "Bienvenue ! La communauté est le cœur d'HeLoRiA.";
+
                 }
 
-                await webhookCEO.send({ content: intentAnswer });
+                await webhookCEO.send({
+                    content: intentAnswer
+                });
+
                 await msgIntent.delete().catch(() => {});
                 intentCollector.stop();
+
                 startDGStep();
             });
 
-            // 3. Règlement & Question Jeu (DG)
+            // =====================================================
+            // 3. RÈGLEMENT & QUESTION JEU
+            // =====================================================
+
             async function startDGStep() {
+
                 const embedReg = new EmbedBuilder()
                     .setColor("#000000")
                     .setTitle("Règles Essentielles")
@@ -135,21 +220,38 @@ module.exports = (client) => {
                         `• **Organisation :** Respect des thèmes de chaque salon.`
                     );
 
-                await webhookDG.send({ content: "Un petit rappel des règles importantes :", embeds: [embedReg] });
+                await webhookDG.send({
+                    content: "Un petit rappel des règles importantes :",
+                    embeds: [embedReg]
+                });
 
                 const gameSelect = new StringSelectMenuBuilder()
                     .setCustomId("select_game")
                     .setPlaceholder("Ton jeu principal ?")
                     .addOptions([
-                        { label: "Fortnite", value: "Fortnite" },
-                        { label: "Rocket League", value: "Rocket League" },
-                        { label: "Valorant / FPS", value: "Valorant / FPS" },
-                        { label: "Autre", value: "Autre" }
+                        {
+                            label: "Fortnite",
+                            value: "Fortnite"
+                        },
+                        {
+                            label: "Rocket League",
+                            value: "Rocket League"
+                        },
+                        {
+                            label: "Valorant / FPS",
+                            value: "Valorant / FPS"
+                        },
+                        {
+                            label: "Autre",
+                            value: "Autre"
+                        }
                     ]);
 
                 const msgGame = await channel.send({
                     content: "À quel jeu joues-tu le plus en ce moment ?",
-                    components: [new ActionRowBuilder().addComponents(gameSelect)]
+                    components: [
+                        new ActionRowBuilder().addComponents(gameSelect)
+                    ]
                 });
 
                 const gameCollector = msgGame.createMessageComponentCollector({
@@ -159,34 +261,72 @@ module.exports = (client) => {
                 });
 
                 gameCollector.on("collect", async (i) => {
+
                     await i.deferUpdate();
+
                     selectedGame = i.values[0];
-                    await webhookDG.send({ content: "C'est noté ! Tu trouveras plein de joueurs avec qui lancer des parties." });
+
+                    await webhookDG.send({
+                        content: "C'est noté ! Tu trouveras plein de joueurs avec qui lancer des parties."
+                    });
+
                     await msgGame.delete().catch(() => {});
                     gameCollector.stop();
+
                     startNotifStep();
                 });
             }
 
-            // 4. Notifications
+            // =====================================================
+            // 4. NOTIFICATIONS
+            // =====================================================
+
             async function startNotifStep() {
+
                 const notifSelect = new StringSelectMenuBuilder()
                     .setCustomId("select_notifs")
                     .setPlaceholder("Tes rôles de notifications...")
                     .setMinValues(0)
                     .setMaxValues(6)
                     .addOptions([
-                        { label: "Annonces", value: CONFIG.ROLES_NOTIFS.annonces },
-                        { label: "Animations / Events", value: CONFIG.ROLES_NOTIFS.anim },
-                        { label: "Sondages", value: CONFIG.ROLES_NOTIFS.sondage },
-                        { label: "WebTV / Lives", value: CONFIG.ROLES_NOTIFS.webtv },
-                        { label: "Partenariats", value: CONFIG.ROLES_NOTIFS.partenaire },
-                        { label: "Réseaux Sociaux", value: CONFIG.ROLES_NOTIFS.reseaux }
+
+                        {
+                            label: "Annonces",
+                            value: "annonces"
+                        },
+
+                        {
+                            label: "Animations / Events",
+                            value: "anim"
+                        },
+
+                        {
+                            label: "Sondages",
+                            value: "sondage"
+                        },
+
+                        {
+                            label: "WebTV / Lives",
+                            value: "webtv"
+                        },
+
+                        {
+                            label: "Partenariats",
+                            value: "partenaire"
+                        },
+
+                        {
+                            label: "Réseaux Sociaux",
+                            value: "reseaux"
+                        }
+
                     ]);
 
                 const msgNotif = await channel.send({
                     content: "Sélectionne les notifications que tu veux activer :",
-                    components: [new ActionRowBuilder().addComponents(notifSelect)]
+                    components: [
+                        new ActionRowBuilder().addComponents(notifSelect)
+                    ]
                 });
 
                 const notifCollector = msgNotif.createMessageComponentCollector({
@@ -196,19 +336,42 @@ module.exports = (client) => {
                 });
 
                 notifCollector.on("collect", async (i) => {
+
                     await i.deferUpdate();
-                    selectedNotifs = i.values;
+
+                    // Transforme les clés sélectionnées en IDs de rôles
+                    selectedNotifs = i.values.flatMap(
+                        notif => CONFIG.ROLES_NOTIFS[notif] || []
+                    );
+
+                    // Supprime les doublons
+                    selectedNotifs = [...new Set(selectedNotifs)];
+
                     await msgNotif.delete().catch(() => {});
                     notifCollector.stop();
+
                     startTagStep();
                 });
             }
 
-            // 5. Tag
+            // =====================================================
+            // 5. TAG
+            // =====================================================
+
             async function startTagStep() {
+
                 const tagRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId("tag_yes").setLabel("Oui").setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId("tag_no").setLabel("Non").setStyle(ButtonStyle.Secondary)
+
+                    new ButtonBuilder()
+                        .setCustomId("tag_yes")
+                        .setLabel("Oui")
+                        .setStyle(ButtonStyle.Success),
+
+                    new ButtonBuilder()
+                        .setCustomId("tag_no")
+                        .setLabel("Non")
+                        .setStyle(ButtonStyle.Secondary)
+
                 );
 
                 const msgTag = await channel.send({
@@ -223,37 +386,67 @@ module.exports = (client) => {
                 });
 
                 tagCollector.on("collect", async (i) => {
+
                     await i.deferUpdate();
+
                     if (i.customId === "tag_yes") {
+
                         shouldAddTag = true;
-                        await webhookCEO.send({ content: "Merci de porter haut les couleurs d'HeLoRiA !" });
+
+                        await webhookCEO.send({
+                            content: "Merci de porter haut les couleurs d'HeLoRiA !"
+                        });
+
                     }
+
                     await msgTag.delete().catch(() => {});
                     tagCollector.stop();
+
                     startCaptchaStep();
                 });
             }
 
-            // 6. Captcha & Logs Staff
+            // =====================================================
+            // 6. CAPTCHA & LOGS
+            // =====================================================
+
             async function startCaptchaStep() {
+
                 const num1 = Math.floor(Math.random() * 120) + 10;
                 const num2 = Math.floor(Math.random() * 120) + 10;
+
                 const correct = num1 + num2;
 
                 const answers = [
-                    { label: `${correct}`, isCorrect: true },
-                    { label: `${correct + 4}`, isCorrect: false },
-                    { label: `${correct - 6}`, isCorrect: false }
+                    {
+                        label: `${correct}`,
+                        isCorrect: true
+                    },
+                    {
+                        label: `${correct + 4}`,
+                        isCorrect: false
+                    },
+                    {
+                        label: `${correct - 6}`,
+                        isCorrect: false
+                    }
                 ].sort(() => Math.random() - 0.5);
 
                 const captchaRow = new ActionRowBuilder();
+
                 answers.forEach((ans, idx) => {
+
                     captchaRow.addComponents(
+
                         new ButtonBuilder()
-                            .setCustomId(`captcha_${ans.isCorrect ? "ok" : "err_" + idx}`)
+                            .setCustomId(
+                                `captcha_${ans.isCorrect ? "ok" : "err_" + idx}`
+                            )
                             .setLabel(ans.label)
                             .setStyle(ButtonStyle.Primary)
+
                     );
+
                 });
 
                 const msgCaptcha = await channel.send({
@@ -268,58 +461,148 @@ module.exports = (client) => {
                 });
 
                 captchaCollector.on("collect", async (i) => {
+
                     if (i.customId === "captcha_ok") {
+
                         await i.deferUpdate();
+
                         clearTimeout(timeoutAutoDelete);
+
                         await msgCaptcha.delete().catch(() => {});
 
+                        // =================================================
+                        // TAG
+                        // =================================================
+
                         if (shouldAddTag) {
-                            await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
+
+                            await member.setNickname(
+                                `HLR ${member.displayName}`.substring(0, 32)
+                            ).catch(() => {});
+
                         }
 
-                        const finalRolesToAdd = [...CONFIG.ROLES_MEMBER, ...selectedNotifs];
-                        await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
-                        await member.roles.add(finalRolesToAdd).catch(() => {});
+                        // =================================================
+                        // RÔLES
+                        // =================================================
+
+                        const finalRolesToAdd = [
+                            ...CONFIG.ROLES_MEMBER,
+                            ...selectedNotifs
+                        ];
+
+                        await member.roles
+                            .remove(CONFIG.ROLE_ONBOARDING)
+                            .catch(() => {});
+
+                        await member.roles
+                            .add(finalRolesToAdd)
+                            .catch(() => {});
+
+                        // =================================================
+                        // MESSAGE FINAL
+                        // =================================================
 
                         await webhookCEO.send({
                             content: `Accès validé ! Bienvenue officiellement sur le serveur HeLoRiA <@${member.id}> !`
                         });
 
-                        // -------------------------------------------------------------
-                        // POINT 2 : ENVOI DES LOGS DANS LE SALON STAFF (1535026560896204922)
-                        // -------------------------------------------------------------
-                        const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
+                        // =================================================
+                        // LOG STAFF
+                        // =================================================
+
+                        const logsChannel = member.guild.channels.cache.get(
+                            CONFIG.LOGS_CHANNEL_ID
+                        );
+
                         if (logsChannel) {
+
                             const embedLog = new EmbedBuilder()
                                 .setColor("#00FF00")
                                 .setTitle("📥 Nouvel Arrivant Validé")
                                 .setThumbnail(member.user.displayAvatarURL())
+
                                 .addFields(
-                                    { name: "Membre", value: `<@${member.id}> (${member.user.tag})`, inline: true },
-                                    { name: "ID", value: `${member.id}`, inline: true },
-                                    { name: "Objectif / Profil", value: selectedIntent, inline: false },
-                                    { name: "Jeu principal", value: selectedGame, inline: true },
-                                    { name: "Tag HLR accepté ?", value: shouldAddTag ? "Oui" : "Non", inline: true },
-                                    { name: "Rôles notifs attribués", value: `${selectedNotifs.length} rôle(s)`, inline: true }
+
+                                    {
+                                        name: "Membre",
+                                        value: `<@${member.id}> (${member.user.tag})`,
+                                        inline: true
+                                    },
+
+                                    {
+                                        name: "ID",
+                                        value: `${member.id}`,
+                                        inline: true
+                                    },
+
+                                    {
+                                        name: "Objectif / Profil",
+                                        value: selectedIntent,
+                                        inline: false
+                                    },
+
+                                    {
+                                        name: "Jeu principal",
+                                        value: selectedGame,
+                                        inline: true
+                                    },
+
+                                    {
+                                        name: "Tag HLR accepté ?",
+                                        value: shouldAddTag ? "Oui" : "Non",
+                                        inline: true
+                                    },
+
+                                    {
+                                        name: "Rôles notifs attribués",
+                                        value: `${selectedNotifs.length} rôle(s)`,
+                                        inline: true
+                                    }
+
                                 )
+
                                 .setTimestamp();
 
-                            await logsChannel.send({ embeds: [embedLog] }).catch(() => {});
+                            await logsChannel
+                                .send({
+                                    embeds: [embedLog]
+                                })
+                                .catch(() => {});
+
                         }
 
-                        // Auto-destruction du salon temporaire après 5 secondes
+                        // =================================================
+                        // SUPPRESSION DU SALON
+                        // =================================================
+
                         setTimeout(async () => {
-                            await channel.delete().catch(() => {});
+
+                            await channel
+                                .delete()
+                                .catch(() => {});
+
                         }, 5000);
 
                     } else {
-                        await i.reply({ content: "Mauvaise réponse, essaie encore !", ephemeral: true });
+
+                        await i.reply({
+                            content: "Mauvaise réponse, essaie encore !",
+                            ephemeral: true
+                        });
+
                     }
+
                 });
+
             }
 
         } catch (err) {
+
             console.error("Erreur onboarding :", err);
+
         }
+
     });
+
 };
