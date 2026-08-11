@@ -9,14 +9,17 @@ const {
     AttachmentBuilder
 } = require("discord.js");
 const path = require("path");
-const fs = require("fs"); // Ajout de fs pour lire correctement les fichiers images
+const fs = require("fs");
 
 const CONFIG = {
     CATEGORY_ID: "1534953439908593857",
     LOGS_CHANNEL_ID: "1535026560896204922",
 
     ROLE_ONBOARDING: "1532058943570837656",
-
+    ROLES_STAFF: [
+        "1532015045800628244", 
+        "1532015039806963763"
+    ],
     ROLES_MEMBER: [
         "1532014889848143964",
         "1532014895657128098"
@@ -71,11 +74,11 @@ module.exports = (client) => {
             let selectedGame = "Non spécifié";
             let selectedIntent = "Non spécifié";
 
-            // Préparation des fichiers locaux avec vérification fs
             const ceoAvatarPath = path.join(__dirname, "assets", "ceo.png");
             const dgAvatarPath = path.join(__dirname, "assets", "dg.png");
             const logoPath = path.join(__dirname, "assets", "logo.png");
 
+            // Création du salon avec accès pour le Staff
             const channel = await member.guild.channels.create({
                 name: `accueil-${member.user.username}`,
                 parent: CONFIG.CATEGORY_ID,
@@ -92,21 +95,21 @@ module.exports = (client) => {
                             PermissionFlagsBits.SendMessages,
                             PermissionFlagsBits.ReadMessageHistory
                         ]
+                    },
+                    {
+                        id: CONFIG.ROLE_STAFF, // Permission accordée au staff pour voir et intervenir
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.SendMessages,
+                            PermissionFlagsBits.ReadMessageHistory
+                        ]
                     }
                 ]
             });
 
-            const timeoutAutoDelete = setTimeout(async () => {
-                if (channel) {
-                    await channel.delete().catch(() => {});
-                }
-            }, 15 * 60 * 1000);
-
-            // Lecture sécurisée des images via Buffer
             const ceoBuffer = fs.existsSync(ceoAvatarPath) ? fs.readFileSync(ceoAvatarPath) : null;
             const dgBuffer = fs.existsSync(dgAvatarPath) ? fs.readFileSync(dgAvatarPath) : null;
 
-            // Création propre des webhooks avec Buffer
             const webhookCEO = await channel.createWebhook({
                 name: CONFIG.CEO.name,
                 avatar: ceoBuffer
@@ -118,6 +121,93 @@ module.exports = (client) => {
             });
 
             // =====================================================
+            // BOUTON DE BYPASS STAFF (ADMINISTRATION)
+            // =====================================================
+            const staffRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("staff_force_validate")
+                    .setLabel("⚡ Validation Forcée (Staff)")
+                    .setStyle(ButtonStyle.Danger)
+            );
+
+            const staffMsg = await channel.send({
+                content: `🛠️ **Panneau Staff :** Si le membre rencontre un problème, un membre du staff autorisé peut forcer la validation ici :`,
+                components: [staffRow]
+            });
+
+            const staffCollector = staffMsg.createMessageComponentCollector({
+                componentType: ComponentType.Button
+            });
+
+            staffCollector.on("collect", async (i) => {
+                // Vérification du rôle Staff Whitelist
+                if (!i.member.roles.cache.has(CONFIG.ROLE_STAFF) && !i.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    return i.reply({ content: "❌ Tu n'as pas la permission d'utiliser ce bouton !", ephemeral: true });
+                }
+
+                if (i.customId === "staff_force_validate") {
+                    // Choix du tag par le staff
+                    const tagChoiceRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId("staff_tag_yes").setLabel("Valider AVEC Tag HLR").setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId("staff_tag_no").setLabel("Valider SANS Tag HLR").setStyle(ButtonStyle.Secondary)
+                    );
+
+                    await i.reply({
+                        content: `⚙️ **Validation manuelle par ${i.user.username}** :\nSouhaites-tu ajouter le tag **HLR** au pseudo du membre ?`,
+                        components: [tagChoiceRow],
+                        ephemeral: true
+                    });
+                }
+            });
+
+            // Gestion de la réponse au menu éphémère du Staff
+            const filterStaffChoice = (i) => (i.customId === "staff_tag_yes" || i.customId === "staff_tag_no") && i.member.roles.cache.has(CONFIG.ROLE_STAFF);
+            const staffChoiceCollector = channel.createMessageComponentCollector({
+                filter: filterStaffChoice,
+                componentType: ComponentType.Button
+            });
+
+            staffChoiceCollector.on("collect", async (i) => {
+                await i.deferUpdate();
+
+                const forceTag = (i.customId === "staff_tag_yes");
+
+                if (forceTag) {
+                    await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
+                }
+
+                // Notifs par défaut si validation forcée (Annonces & Events)
+                const defaultNotifs = [...CONFIG.ROLES_NOTIFS.annonces, ...CONFIG.ROLES_NOTIFS.anim];
+                const finalRolesToAdd = [...new Set([...CONFIG.ROLES_MEMBER, ...defaultNotifs])];
+
+                await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
+                await member.roles.add(finalRolesToAdd).catch(() => {});
+
+                await channel.send(`✅ **Le membre a été validé manuellement par <@${i.user.id}> !** Fermeture du salon dans 5 secondes...`);
+
+                // Envoi du log Staff
+                const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
+                if (logsChannel) {
+                    const embedLog = new EmbedBuilder()
+                        .setColor("#FFA500")
+                        .setTitle("🛠️ Validation Forcée par le Staff")
+                        .setThumbnail(member.user.displayAvatarURL())
+                        .addFields(
+                            { name: "Membre", value: `<@${member.id}> (${member.user.tag})`, inline: true },
+                            { name: "Staff Responsable", value: `<@${i.user.id}>`, inline: true },
+                            { name: "Tag HLR appliqué ?", value: forceTag ? "Oui" : "Non", inline: true }
+                        )
+                        .setTimestamp();
+
+                    await logsChannel.send({ embeds: [embedLog] }).catch(() => {});
+                }
+
+                setTimeout(async () => {
+                    await channel.delete().catch(() => {});
+                }, 5000);
+            });
+
+            // =====================================================
             // 1. PRÉSENTATION CEO
             // =====================================================
 
@@ -125,7 +215,6 @@ module.exports = (client) => {
                 content: `Bienvenue <@${member.id}> chez **Team HeLoRiA** !`
             });
 
-            // Préparation du logo pour l'embed
             const filesSend = [];
             let logoAttachmentName = null;
 
@@ -181,7 +270,6 @@ module.exports = (client) => {
 
             const intentCollector = msgIntent.createMessageComponentCollector({
                 componentType: ComponentType.Button,
-                time: 120000,
                 filter: i => i.user.id === member.id
             });
 
@@ -249,7 +337,6 @@ module.exports = (client) => {
 
                 const gameCollector = msgGame.createMessageComponentCollector({
                     componentType: ComponentType.StringSelect,
-                    time: 120000,
                     filter: i => i.user.id === member.id
                 });
 
@@ -297,7 +384,6 @@ module.exports = (client) => {
 
                 const notifCollector = msgNotif.createMessageComponentCollector({
                     componentType: ComponentType.StringSelect,
-                    time: 120000,
                     filter: i => i.user.id === member.id
                 });
 
@@ -341,7 +427,6 @@ module.exports = (client) => {
 
                 const tagCollector = msgTag.createMessageComponentCollector({
                     componentType: ComponentType.Button,
-                    time: 120000,
                     filter: i => i.user.id === member.id
                 });
 
@@ -396,14 +481,12 @@ module.exports = (client) => {
 
                 const captchaCollector = msgCaptcha.createMessageComponentCollector({
                     componentType: ComponentType.Button,
-                    time: 120000,
                     filter: i => i.user.id === member.id
                 });
 
                 captchaCollector.on("collect", async (i) => {
                     if (i.customId === "captcha_ok") {
                         await i.deferUpdate();
-                        clearTimeout(timeoutAutoDelete);
 
                         await msgCaptcha.delete().catch(() => {});
 
