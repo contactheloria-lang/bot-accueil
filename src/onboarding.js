@@ -26,39 +26,16 @@ const CONFIG = {
     ],
 
     ROLES_NOTIFS: {
-        anim: [
-            "1532014836463177739",
-            "1532014855698120794"
-        ],
-        sondage: [
-            "1532014839659237587",
-            "1532014855698120794"
-        ],
-        webtv: [
-            "1532014842637058058",
-            "1532014855698120794"
-        ],
-        partenaire: [
-            "1532014845963010119",
-            "1532014855698120794"
-        ],
-        reseaux: [
-            "1532014849582829659",
-            "1532014855698120794"
-        ],
-        annonces: [
-            "1532014852724363416",
-            "1532014855698120794"
-        ]
+        anim: ["1532014836463177739", "1532014855698120794"],
+        sondage: ["1532014839659237587", "1532014855698120794"],
+        webtv: ["1532014842637058058", "1532014855698120794"],
+        partenaire: ["1532014845963010119", "1532014855698120794"],
+        reseaux: ["1532014849582829659", "1532014855698120794"],
+        annonces: ["1532014852724363416", "1532014855698120794"]
     },
 
-    CEO: {
-        name: "HLR Logs"
-    },
-
-    DG: {
-        name: "HLR Raxeur"
-    }
+    CEO: { name: "HLR Logs" },
+    DG: { name: "HLR Raxeur" }
 };
 
 module.exports = (client) => {
@@ -66,7 +43,6 @@ module.exports = (client) => {
     client.on("guildMemberAdd", async (member) => {
 
         try {
-
             await member.roles.add(CONFIG.ROLE_ONBOARDING).catch(() => {});
 
             let selectedNotifs = [];
@@ -78,33 +54,44 @@ module.exports = (client) => {
             const dgAvatarPath = path.join(__dirname, "assets", "dg.png");
             const logoPath = path.join(__dirname, "assets", "logo.png");
 
-            // Création du salon avec accès pour le Staff
+            // =====================================================
+            // PERMISSIONS SECURISEES (Fix InvalidType Crash)
+            // =====================================================
+            const permissions = [
+                {
+                    id: member.guild.id,
+                    deny: [PermissionFlagsBits.ViewChannel]
+                },
+                {
+                    id: member.id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.ReadMessageHistory
+                    ]
+                }
+            ];
+
+            // Ajout sécurisé des rôles Staff uniquement s'ils existent dans la guilde
+            if (Array.isArray(CONFIG.ROLES_STAFF)) {
+                CONFIG.ROLES_STAFF.forEach(staffId => {
+                    if (member.guild.roles.cache.has(staffId)) {
+                        permissions.push({
+                            id: staffId,
+                            allow: [
+                                PermissionFlagsBits.ViewChannel,
+                                PermissionFlagsBits.SendMessages,
+                                PermissionFlagsBits.ReadMessageHistory
+                            ]
+                        });
+                    }
+                });
+            }
+
             const channel = await member.guild.channels.create({
                 name: `accueil-${member.user.username}`,
                 parent: CONFIG.CATEGORY_ID,
-
-                permissionOverwrites: [
-                    {
-                        id: member.guild.id,
-                        deny: [PermissionFlagsBits.ViewChannel]
-                    },
-                    {
-                        id: member.id,
-                        allow: [
-                            PermissionFlagsBits.ViewChannel,
-                            PermissionFlagsBits.SendMessages,
-                            PermissionFlagsBits.ReadMessageHistory
-                        ]
-                    },
-                    {
-                        id: CONFIG.ROLE_STAFF, // Permission accordée au staff pour voir et intervenir
-                        allow: [
-                            PermissionFlagsBits.ViewChannel,
-                            PermissionFlagsBits.SendMessages,
-                            PermissionFlagsBits.ReadMessageHistory
-                        ]
-                    }
-                ]
+                permissionOverwrites: permissions
             });
 
             const ceoBuffer = fs.existsSync(ceoAvatarPath) ? fs.readFileSync(ceoAvatarPath) : null;
@@ -131,7 +118,7 @@ module.exports = (client) => {
             );
 
             const staffMsg = await channel.send({
-                content: `🛠️ **Panneau Staff :** Si le membre rencontre un problème, un membre du staff autorisé peut forcer la validation ici :`,
+                content: `🛠️ **Panneau d'Administration :** Réservé aux membres de la direction & modération.`,
                 components: [staffRow]
             });
 
@@ -140,28 +127,27 @@ module.exports = (client) => {
             });
 
             staffCollector.on("collect", async (i) => {
-                // Vérification du rôle Staff Whitelist
-                if (!i.member.roles.cache.has(CONFIG.ROLE_STAFF) && !i.member.permissions.has(PermissionFlagsBits.Administrator)) {
-                    return i.reply({ content: "❌ Tu n'as pas la permission d'utiliser ce bouton !", ephemeral: true });
+                const isStaff = CONFIG.ROLES_STAFF.some(id => i.member.roles.cache.has(id)) || i.member.permissions.has(PermissionFlagsBits.Administrator);
+
+                if (!isStaff) {
+                    return i.reply({ content: "❌ Seul le personnel autorisé peut exécuter cette action.", ephemeral: true });
                 }
 
                 if (i.customId === "staff_force_validate") {
-                    // Choix du tag par le staff
                     const tagChoiceRow = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId("staff_tag_yes").setLabel("Valider AVEC Tag HLR").setStyle(ButtonStyle.Success),
-                        new ButtonBuilder().setCustomId("staff_tag_no").setLabel("Valider SANS Tag HLR").setStyle(ButtonStyle.Secondary)
+                        new ButtonBuilder().setCustomId("staff_tag_yes").setLabel("Valider AVEC Tag [HLR]").setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId("staff_tag_no").setLabel("Valider SANS Tag").setStyle(ButtonStyle.Secondary)
                     );
 
                     await i.reply({
-                        content: `⚙️ **Validation manuelle par ${i.user.username}** :\nSouhaites-tu ajouter le tag **HLR** au pseudo du membre ?`,
+                        content: `⚙️ **Procédure de validation manuelle pour ${member.user.tag}** :\nSouhaitez-vous attribuer le tag officiel au pseudonyme ?`,
                         components: [tagChoiceRow],
                         ephemeral: true
                     });
                 }
             });
 
-            // Gestion de la réponse au menu éphémère du Staff
-            const filterStaffChoice = (i) => (i.customId === "staff_tag_yes" || i.customId === "staff_tag_no") && i.member.roles.cache.has(CONFIG.ROLE_STAFF);
+            const filterStaffChoice = (i) => (i.customId === "staff_tag_yes" || i.customId === "staff_tag_no") && (CONFIG.ROLES_STAFF.some(id => i.member.roles.cache.has(id)) || i.member.permissions.has(PermissionFlagsBits.Administrator));
             const staffChoiceCollector = channel.createMessageComponentCollector({
                 filter: filterStaffChoice,
                 componentType: ComponentType.Button
@@ -176,26 +162,24 @@ module.exports = (client) => {
                     await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
                 }
 
-                // Notifs par défaut si validation forcée (Annonces & Events)
                 const defaultNotifs = [...CONFIG.ROLES_NOTIFS.annonces, ...CONFIG.ROLES_NOTIFS.anim];
                 const finalRolesToAdd = [...new Set([...CONFIG.ROLES_MEMBER, ...defaultNotifs])];
 
                 await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
                 await member.roles.add(finalRolesToAdd).catch(() => {});
 
-                await channel.send(`✅ **Le membre a été validé manuellement par <@${i.user.id}> !** Fermeture du salon dans 5 secondes...`);
+                await channel.send(`✅ **Accès accordé manuellement par <@${i.user.id}> !** Nettoyage du salon dans 5 secondes...`);
 
-                // Envoi du log Staff
                 const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
                 if (logsChannel) {
                     const embedLog = new EmbedBuilder()
                         .setColor("#FFA500")
-                        .setTitle("🛠️ Validation Forcée par le Staff")
+                        .setTitle("🛡️ Système d'Accueil — Validation Manuelle")
                         .setThumbnail(member.user.displayAvatarURL())
                         .addFields(
-                            { name: "Membre", value: `<@${member.id}> (${member.user.tag})`, inline: true },
-                            { name: "Staff Responsable", value: `<@${i.user.id}>`, inline: true },
-                            { name: "Tag HLR appliqué ?", value: forceTag ? "Oui" : "Non", inline: true }
+                            { name: "👤 Membre Concerné", value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+                            { name: "👑 Modérateur", value: `<@${i.user.id}>`, inline: true },
+                            { name: "🏷️ Tag Structure", value: forceTag ? "Activé" : "Désactivé", inline: true }
                         )
                         .setTimestamp();
 
@@ -208,11 +192,10 @@ module.exports = (client) => {
             });
 
             // =====================================================
-            // 1. PRÉSENTATION CEO
+            // 1. PRÉSENTATION OFFICIELLE
             // =====================================================
-
             await webhookCEO.send({
-                content: `Bienvenue <@${member.id}> chez **Team HeLoRiA** !`
+                content: `Bienvenue parmi nous <@${member.id}> !`
             });
 
             const filesSend = [];
@@ -225,12 +208,12 @@ module.exports = (client) => {
             }
 
             const embedPres = new EmbedBuilder()
-                .setColor("#FFFFFF")
-                .setTitle("Team HeLoRiA — Esport & Community")
+                .setColor("#2B2D31")
+                .setTitle("🏆 Team HeLoRiA — Esport & Performance")
                 .setDescription(
-                    `Bienvenue parmi nous !\n\n` +
-                    `Team HeLoRiA est une structure esport axée sur la compétition et la communauté.\n\n` +
-                    `**Fondateur :** <@1431661348218998948>`
+                    `Ravi de t'accueillir sur notre serveur officiel !\n\n` +
+                    `**HeLoRiA** est un collectif axé sur l'ambition, la compétition et la cohésion communautaire. Que tu sois ici pour performer, créer du contenu ou simplement échanger avec des passionnés, tu es au bon endroit.\n\n` +
+                    `📌 **Fondateur :** <@1431661348218998948>`
                 );
 
             if (logoAttachmentName) {
@@ -243,56 +226,53 @@ module.exports = (client) => {
             });
 
             // =====================================================
-            // 2. QUESTION INTENTION
+            // 2. CHOIX DU PROFIL (INTENTION)
             // =====================================================
-
-            const intentRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId("intent_player")
-                    .setLabel("Joueur / Compétition")
-                    .setStyle(ButtonStyle.Primary),
-
-                new ButtonBuilder()
-                    .setCustomId("intent_creator")
-                    .setLabel("Créateur / Streamer")
-                    .setStyle(ButtonStyle.Primary),
-
-                new ButtonBuilder()
-                    .setCustomId("intent_community")
-                    .setLabel("Communauté / Fan")
-                    .setStyle(ButtonStyle.Secondary)
-            );
+            const intentMenu = new StringSelectMenuBuilder()
+                .setCustomId("select_intent")
+                .setPlaceholder("Sélectionne ton profil principal...")
+                .addOptions([
+                    { label: "Joueur / Compétition", value: "intent_player", description: "Performer, faire des tournois et scrims", emoji: "🎮" },
+                    { label: "Créateur / Streamer", value: "intent_creator", description: "Proposer du contenu, faire des lives", emoji: "🎥" },
+                    { label: "Staff / Modération", value: "intent_staff", description: "Aider au développement de la structure", emoji: "🛡️" },
+                    { label: "Audiovisuel / Graphiste", value: "intent_av", description: "Gérer le montage, le design ou l'image", emoji: "🎨" },
+                    { label: "Communauté / Fan", value: "intent_community", description: "Suivre la structure et passer de bons moments", emoji: "💬" }
+                ]);
 
             const msgIntent = await channel.send({
-                content: `**Question du CEO :** Quel est ton objectif principal sur le serveur ?`,
-                components: [intentRow]
+                content: `🔍 **Étape 1/4 :** Quel est le motif principal de ta venue parmi nous ?`,
+                components: [new ActionRowBuilder().addComponents(intentMenu)]
             });
 
             const intentCollector = msgIntent.createMessageComponentCollector({
-                componentType: ComponentType.Button,
+                componentType: ComponentType.StringSelect,
                 filter: i => i.user.id === member.id
             });
 
             intentCollector.on("collect", async (i) => {
                 await i.deferUpdate();
 
+                const choice = i.values[0];
                 let intentAnswer = "";
 
-                if (i.customId === "intent_player") {
-                    selectedIntent = "Joueur / Compétition";
-                    intentAnswer = "Super ! On cherche toujours des compétiteurs déterminés.";
-                } else if (i.customId === "intent_creator") {
-                    selectedIntent = "Créateur / Streamer";
-                    intentAnswer = "Top ! La création de contenu est très importante pour nous.";
+                if (choice === "intent_player") {
+                    selectedIntent = "🎮 Joueur / Compétition";
+                    intentAnswer = "Excellent ! Nous sommes constamment à la recherche de profils déterminés à viser le sommet.";
+                } else if (choice === "intent_creator") {
+                    selectedIntent = "🎥 Créateur / Streamer";
+                    intentAnswer = "Ravi de l'apprendre ! La visibilité et le contenu sont des piliers majeurs chez HeLoRiA.";
+                } else if (choice === "intent_staff") {
+                    selectedIntent = "🛡️ Staff / Modération";
+                    intentAnswer = "Top ! Une structure forte repose sur une équipe d'encadrement solide et passionnée.";
+                } else if (choice === "intent_av") {
+                    selectedIntent = "🎨 Audiovisuel / Graphiste";
+                    intentAnswer = "Génial ! L'identité visuelle est primordiale pour faire rayonner nos joueurs.";
                 } else {
-                    selectedIntent = "Communauté / Fan";
-                    intentAnswer = "Bienvenue ! La communauté est le cœur d'HeLoRiA.";
+                    selectedIntent = "💬 Communauté / Fan";
+                    intentAnswer = "Bienvenue à toi ! La communauté est le cœur palpitant d'HeLoRiA.";
                 }
 
-                await webhookCEO.send({
-                    content: intentAnswer
-                });
-
+                await webhookCEO.send({ content: intentAnswer });
                 await msgIntent.delete().catch(() => {});
                 intentCollector.stop();
 
@@ -300,39 +280,36 @@ module.exports = (client) => {
             });
 
             // =====================================================
-            // 3. RÈGLEMENT & QUESTION JEU
+            // 3. CHARTE & SÉLECTION DU JEU
             // =====================================================
-
             async function startDGStep() {
                 const embedReg = new EmbedBuilder()
-                    .setColor("#000000")
-                    .setTitle("Règles Essentielles")
+                    .setColor("#1E1F22")
+                    .setTitle("📜 Charte & Règles de la Structure")
                     .setDescription(
-                        `• **Respect :** Attitude mûre et correcte.\n` +
-                        `• **Sécurité :** Aucun spam, harcèlement ou lien suspect.\n` +
-                        `• **Organisation :** Respect des thèmes de chaque salon.`
+                        `• **Respect & Entraide :** Un comportement irréprochable est exigé.\n` +
+                        `• **Sécurité :** Zéro tolérance pour le spam, le harcèlement ou la publicité sauvage.\n` +
+                        `• **Cohérence :** Merci d'utiliser les salons adaptés à tes besoins.`
                     );
 
                 await webhookDG.send({
-                    content: "Un petit rappel des règles importantes :",
+                    content: "Afin de garantir une bonne expérience pour tous, voici nos principes fondamentaux :",
                     embeds: [embedReg]
                 });
 
                 const gameSelect = new StringSelectMenuBuilder()
                     .setCustomId("select_game")
-                    .setPlaceholder("Ton jeu principal ?")
+                    .setPlaceholder("Sélectionne ton jeu principal...")
                     .addOptions([
-                        { label: "Fortnite", value: "Fortnite" },
-                        { label: "Rocket League", value: "Rocket League" },
-                        { label: "Valorant / FPS", value: "Valorant / FPS" },
-                        { label: "Autre", value: "Autre" }
+                        { label: "Fortnite", value: "Fortnite", emoji: "🪂" },
+                        { label: "Rocket League", value: "Rocket League", emoji: "🚗" },
+                        { label: "Valorant / FPS", value: "Valorant / FPS", emoji: "🎯" },
+                        { label: "Autre discipline", value: "Autre", emoji: "🎲" }
                     ]);
 
                 const msgGame = await channel.send({
-                    content: "À quel jeu joues-tu le plus en ce moment ?",
-                    components: [
-                        new ActionRowBuilder().addComponents(gameSelect)
-                    ]
+                    content: "🎮 **Étape 2/4 :** Quel est ton jeu de prédilection ?",
+                    components: [new ActionRowBuilder().addComponents(gameSelect)]
                 });
 
                 const gameCollector = msgGame.createMessageComponentCollector({
@@ -346,7 +323,7 @@ module.exports = (client) => {
                     selectedGame = i.values[0];
 
                     await webhookDG.send({
-                        content: "C'est noté ! Tu trouveras plein de joueurs avec qui lancer des parties."
+                        content: `C'est noté pour **${selectedGame}** ! Tu trouveras des équipiers très rapidement.`
                     });
 
                     await msgGame.delete().catch(() => {});
@@ -357,29 +334,26 @@ module.exports = (client) => {
             }
 
             // =====================================================
-            // 4. NOTIFICATIONS
+            // 4. NOTIFICATIONS PERSONNALISÉES
             // =====================================================
-
             async function startNotifStep() {
                 const notifSelect = new StringSelectMenuBuilder()
                     .setCustomId("select_notifs")
-                    .setPlaceholder("Tes rôles de notifications...")
+                    .setPlaceholder("Choisis tes notifications...")
                     .setMinValues(0)
                     .setMaxValues(6)
                     .addOptions([
-                        { label: "Annonces", value: "annonces" },
-                        { label: "Animations / Events", value: "anim" },
-                        { label: "Sondages", value: "sondage" },
-                        { label: "WebTV / Lives", value: "webtv" },
-                        { label: "Partenariats", value: "partenaire" },
-                        { label: "Réseaux Sociaux", value: "reseaux" }
+                        { label: "Annonces Officielle", value: "annonces", description: "Mises à jour stratégiques de la structure", emoji: "📢" },
+                        { label: "Animations & Events", value: "anim", description: "Tournois internes et soirées communautaires", emoji: "🎉" },
+                        { label: "Sondages", value: "sondage", description: "Donne ton avis sur le futur du serveur", emoji: "📊" },
+                        { label: "WebTV & Lives", value: "webtv", description: "Alertes lors des streams officiels", emoji: "📡" },
+                        { label: "Partenariats", value: "partenaire", description: "Offres et avantages de nos partenaires", emoji: "🤝" },
+                        { label: "Réseaux Sociaux", value: "reseaux", description: "Nouveaux posts X, TikTok et YouTube", emoji: "📲" }
                     ]);
 
                 const msgNotif = await channel.send({
-                    content: "Sélectionne les notifications que tu veux activer :",
-                    components: [
-                        new ActionRowBuilder().addComponents(notifSelect)
-                    ]
+                    content: "🔔 **Étape 3/4 :** Coche les alertes que tu souhaites recevoir :",
+                    components: [new ActionRowBuilder().addComponents(notifSelect)]
                 });
 
                 const notifCollector = msgNotif.createMessageComponentCollector({
@@ -390,10 +364,7 @@ module.exports = (client) => {
                 notifCollector.on("collect", async (i) => {
                     await i.deferUpdate();
 
-                    selectedNotifs = i.values.flatMap(
-                        notif => CONFIG.ROLES_NOTIFS[notif] || []
-                    );
-
+                    selectedNotifs = i.values.flatMap(notif => CONFIG.ROLES_NOTIFS[notif] || []);
                     selectedNotifs = [...new Set(selectedNotifs)];
 
                     await msgNotif.delete().catch(() => {});
@@ -404,24 +375,16 @@ module.exports = (client) => {
             }
 
             // =====================================================
-            // 5. TAG
+            // 5. APPARTENANCE AU TAG
             // =====================================================
-
             async function startTagStep() {
                 const tagRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder()
-                        .setCustomId("tag_yes")
-                        .setLabel("Oui")
-                        .setStyle(ButtonStyle.Success),
-
-                    new ButtonBuilder()
-                        .setCustomId("tag_no")
-                        .setLabel("Non")
-                        .setStyle(ButtonStyle.Secondary)
+                    new ButtonBuilder().setCustomId("tag_yes").setLabel("Oui, avec fierté !").setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId("tag_no").setLabel("Non, pas pour le moment").setStyle(ButtonStyle.Secondary)
                 );
 
                 const msgTag = await channel.send({
-                    content: `Veux-tu porter notre tag ? (Exemple : \`HLR ${member.displayName}\`)`,
+                    content: `🏷️ **Étape 4/4 :** Souhaites-tu porter le prefixe **HLR** dans ton pseudo sur le serveur ? (Exemple : \`HLR ${member.displayName}\`)`,
                     components: [tagRow]
                 });
 
@@ -436,7 +399,7 @@ module.exports = (client) => {
                     if (i.customId === "tag_yes") {
                         shouldAddTag = true;
                         await webhookCEO.send({
-                            content: "Merci de porter haut les couleurs d'HeLoRiA !"
+                            content: "Un grand merci pour ton soutien et ta fierté d'arborer nos couleurs !"
                         });
                     }
 
@@ -448,23 +411,20 @@ module.exports = (client) => {
             }
 
             // =====================================================
-            // 6. CAPTCHA & LOGS
+            // 6. CAPTCHA ANTI-BOT & FINALISATION
             // =====================================================
-
             async function startCaptchaStep() {
-                const num1 = Math.floor(Math.random() * 120) + 10;
-                const num2 = Math.floor(Math.random() * 120) + 10;
-
+                const num1 = Math.floor(Math.random() * 50) + 10;
+                const num2 = Math.floor(Math.random() * 50) + 10;
                 const correct = num1 + num2;
 
                 const answers = [
                     { label: `${correct}`, isCorrect: true },
-                    { label: `${correct + 4}`, isCorrect: false },
-                    { label: `${correct - 6}`, isCorrect: false }
+                    { label: `${correct + 3}`, isCorrect: false },
+                    { label: `${correct - 5}`, isCorrect: false }
                 ].sort(() => Math.random() - 0.5);
 
                 const captchaRow = new ActionRowBuilder();
-
                 answers.forEach((ans, idx) => {
                     captchaRow.addComponents(
                         new ButtonBuilder()
@@ -475,7 +435,7 @@ module.exports = (client) => {
                 });
 
                 const msgCaptcha = await channel.send({
-                    content: `**Vérification finale :** Combien font **${num1} + ${num2}** ?`,
+                    content: `🤖 **Sécurité :** Pour valider ton accès, résous ce calcul mental simple : **${num1} + ${num2}** = ?`,
                     components: [captchaRow]
                 });
 
@@ -491,37 +451,31 @@ module.exports = (client) => {
                         await msgCaptcha.delete().catch(() => {});
 
                         if (shouldAddTag) {
-                            await member.setNickname(
-                                `HLR ${member.displayName}`.substring(0, 32)
-                            ).catch(() => {});
+                            await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
                         }
 
-                        const finalRolesToAdd = [
-                            ...CONFIG.ROLES_MEMBER,
-                            ...selectedNotifs
-                        ];
+                        const finalRolesToAdd = [...new Set([...CONFIG.ROLES_MEMBER, ...selectedNotifs])];
 
                         await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
                         await member.roles.add(finalRolesToAdd).catch(() => {});
 
                         await webhookCEO.send({
-                            content: `Accès validé ! Bienvenue officiellement sur le serveur HeLoRiA <@${member.id}> !`
+                            content: `🎉 Configuration terminée ! Tes rôles ont été attribués. Bienvenue officiellement chez **HeLoRiA** <@${member.id}> !`
                         });
 
                         const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
-
                         if (logsChannel) {
                             const embedLog = new EmbedBuilder()
-                                .setColor("#00FF00")
+                                .setColor("#22C55E")
                                 .setTitle("📥 Nouvel Arrivant Validé")
                                 .setThumbnail(member.user.displayAvatarURL())
                                 .addFields(
-                                    { name: "Membre", value: `<@${member.id}> (${member.user.tag})`, inline: true },
-                                    { name: "ID", value: `${member.id}`, inline: true },
-                                    { name: "Objectif / Profil", value: selectedIntent, inline: false },
-                                    { name: "Jeu principal", value: selectedGame, inline: true },
-                                    { name: "Tag HLR accepté ?", value: shouldAddTag ? "Oui" : "Non", inline: true },
-                                    { name: "Rôles notifs attribués", value: `${selectedNotifs.length} rôle(s)`, inline: true }
+                                    { name: "👤 Membre", value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+                                    { name: "🆔 ID Unique", value: `\`${member.id}\``, inline: true },
+                                    { name: "🎯 Profil / Métier", value: selectedIntent, inline: false },
+                                    { name: "🎮 Discipline", value: selectedGame, inline: true },
+                                    { name: "🏷️ Tag Affiché", value: shouldAddTag ? "Oui" : "Non", inline: true },
+                                    { name: "🔔 Notifs Sélectionnées", value: `${selectedNotifs.length} rôle(s)`, inline: true }
                                 )
                                 .setTimestamp();
 
@@ -534,7 +488,7 @@ module.exports = (client) => {
 
                     } else {
                         await i.reply({
-                            content: "Mauvaise réponse, essaie encore !",
+                            content: "❌ Calcul incorrect, essaie à nouveau !",
                             ephemeral: true
                         });
                     }
