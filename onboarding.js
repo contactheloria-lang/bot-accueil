@@ -5,12 +5,8 @@ const {
     ButtonBuilder,
     ButtonStyle,
     PermissionFlagsBits,
-<<<<<<< HEAD
     ComponentType,
     AttachmentBuilder
-=======
-    ComponentType
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
 } = require("discord.js");
 const path = require("path");
 
@@ -53,25 +49,12 @@ const CONFIG = {
     },
 
     CEO: {
-<<<<<<< HEAD
         name: "HLR Logs"
     },
 
     DG: {
         name: "HLR Raxeur"
     }
-=======
-        name: "HLR Logs",
-        avatar: "https://cdn.discordapp.com/attachments/1470095477344043028/1535624187434115072/ea76f024803be06f312ccd74350e221e.jpg?ex=6a7870f8&is=6a771f78&hm=f5429d5c825e4ad84689b2b6b89eeded5324c12934c6e89f10d2d98258959263&"
-    },
-
-    DG: {
-        name: "HLR Raxeur",
-        avatar: "https://cdn.discordapp.com/attachments/1470095477344043028/1535624187698225152/Capture_decran_2026-08-06_180114.png?ex=6a7870f8&is=6a771f78&hm=fc5e307cd8e91e546c9a1e85e9c9262aee6692b6b64226943a584966b2d362a7&"
-    },
-
-    LOGO_HELORIA: "https://cdn.discordapp.com/attachments/1470095477344043028/1535624187115339806/2b0dda65-3e4b-4a35-b533-b7c945e8b50f.png?ex=6a7870f8&is=6a771f78&hm=32542403f459b0742ccca311574547bb54946dc2b127e36a9f2c728ce86a0d95&"
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
 };
 
 module.exports = (client) => {
@@ -118,25 +101,15 @@ module.exports = (client) => {
                 }
             }, 15 * 60 * 1000);
 
-<<<<<<< HEAD
             // Webhooks créés directement avec les images locales
             const webhookCEO = await channel.createWebhook({
                 name: CONFIG.CEO.name,
                 avatar: ceoAvatarPath
-=======
-            const webhookCEO = await channel.createWebhook({
-                name: CONFIG.CEO.name,
-                avatar: CONFIG.CEO.avatar
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
             });
 
             const webhookDG = await channel.createWebhook({
                 name: CONFIG.DG.name,
-<<<<<<< HEAD
                 avatar: dgAvatarPath
-=======
-                avatar: CONFIG.DG.avatar
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
             });
 
             // =====================================================
@@ -146,12 +119,9 @@ module.exports = (client) => {
             await webhookCEO.send({
                 content: `Bienvenue <@${member.id}> chez **Team HeLoRiA** !`
             });
-<<<<<<< HEAD
 
             // Pièce jointe pour le logo local dans l'embed
             const logoAttachment = new AttachmentBuilder(logoPath, { name: "logo.png" });
-=======
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
 
             const embedPres = new EmbedBuilder()
                 .setColor("#FFFFFF")
@@ -164,12 +134,8 @@ module.exports = (client) => {
                 );
 
             await webhookCEO.send({
-<<<<<<< HEAD
                 embeds: [embedPres],
                 files: [logoAttachment]
-=======
-                embeds: [embedPres]
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
             });
 
             // =====================================================
@@ -639,8 +605,4 @@ module.exports = (client) => {
 
     });
 
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 79dd62bae63dac08ba5cc6d5d2cd0434d85479a6
