@@ -78,9 +78,10 @@ module.exports = (client) => {
             let selectedGame = "Non spécifié";
             let selectedIntent = "Non spécifié";
 
-            const ceoAvatarPath = path.join(__dirname, "..", "assets", "ceo.png");
-            const dgAvatarPath = path.join(__dirname, "..", "assets", "dg.png");
-            const logoPath = path.join(__dirname, "..", "assets", "logo.png");
+            // Chemins ajustés pour correspondre à ton dossier src/assets/
+            const ceoAvatarPath = path.join(__dirname, "assets", "ceo.png");
+            const dgAvatarPath  = path.join(__dirname, "assets", "dg.png");
+            const logoPath      = path.join(__dirname, "assets", "logo.png");
 
             // Permissions
             const permissions = [
