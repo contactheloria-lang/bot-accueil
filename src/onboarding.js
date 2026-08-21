@@ -12,47 +12,37 @@ const path = require("path");
 const fs = require("fs");
 
 // =====================================================
-// DICTIONNAIRE DES EMOJIS SERVEUR (STRICTEMENT DÉFINIS)
+// DICTIONNAIRE DES EMOJIS SERVEUR
 // =====================================================
-// .text -> Pour le texte des messages et les embeds
-// .id   -> Uniquement l'ID pour les boutons/menus (.setEmoji)
 const EMOJIS = {
-    TELESCOPE:    { text: "<:65264telescope:1537586517453832222>", id: "1537586517453832222" },
-    CROWN:        { text: "<a:darkbluecrown:1533535362566324245>", id: "1533535362566324245" },
-    QUILL:        { text: "<:6880quill:1537585310794391563>", id: "1537585310794391563" },
-    HLR_WIN:      { text: "<:hlrwin:1537584105536094248>", id: "1537584105536094248" },
-    RULES:        { text: "<:580437rules:1537583160345366578>", id: "1537583160345366578" },
-    TRIALMOD:     { text: "<:94919trialmod:1537582836318609521>", id: "1537582836318609521" },
-    ANIMATION:    { text: "<:68052micanimation:1537582247278813204>", id: "1537582247278813204" },
-    MODERATOR:    { text: "<:3446blurplecertifiedmoderator:1533535324309815367>", id: "1533535324309815367" },
-    BAN:          { text: "<:9299blurpleban:1533535325996056807>", id: "1533535325996056807" },
-    TICKET:       { text: "<:29909ticket:1537580036159316108>", id: "1537580036159316108" },
-    BRIEFCASE:    { text: "<:75828briefcase:1537579702812807248>", id: "1537579702812807248" },
-    CERTIFIED:    { text: "<:20336certified:1537579306690281544>", id: "1537579306690281544" },
-    HANDSHAKE:    { text: "<:600404handshake:1537578056447828058>", id: "1537578056447828058" },
-    PAYPAL:       { text: "<:1716_PAYPAL:1537578291593093240>", id: "1537578291593093240" },
-    MONEY:        { text: "<:63043moneyspread:1537577805829636117>", id: "1537577805829636117" },
-    PREMIUM:      { text: "<:5647premiumicon:1533535330538360942>", id: "1533535330538360942" },
-    LOCK:         { text: "<a:lockicon:1533535370787033198>", id: "1533535370787033198" },
-    UPDATE:       { text: "<:update:1533535384674369777>", id: "1533535384674369777" },
-    LOADING:      { text: "<a:loadingicon:1533535386951749683>", id: "1533535386951749683" },
-    WARNING:      { text: "<:warningd:1533535400176386068>", id: "1533535400176386068" }
+    TELESCOPE:  { text: "<:65264telescope:1537586517453832222>", id: "1537586517453832222" },
+    CROWN:      { text: "<a:darkbluecrown:1533535362566324245>", id: "1533535362566324245" },
+    QUILL:      { text: "<:6880quill:1537585310794391563>", id: "1537585310794391563" },
+    HLR_WIN:    { text: "<:hlrwin:1537584105536094248>", id: "1537584105536094248" },
+    RULES:      { text: "<:580437rules:1537583160345366578>", id: "1537583160345366578" },
+    TRIALMOD:   { text: "<:94919trialmod:1537582836318609521>", id: "1537582836318609521" },
+    ANIMATION:  { text: "<:68052micanimation:1537582247278813204>", id: "1537582247278813204" },
+    MODERATOR:  { text: "<:3446blurplecertifiedmoderator:1533535324309815367>", id: "1533535324309815367" },
+    BAN:        { text: "<:9299blurpleban:1533535325996056807>", id: "1533535325996056807" },
+    TICKET:     { text: "<:29909ticket:1537580036159316108>", id: "1537580036159316108" },
+    BRIEFCASE:  { text: "<:75828briefcase:1537579702812807248>", id: "1537579702812807248" },
+    CERTIFIED:  { text: "<:20336certified:1537579306690281544>", id: "1537579306690281544" },
+    HANDSHAKE:  { text: "<:600404handshake:1537578056447828058>", id: "1537578056447828058" },
+    PAYPAL:     { text: "<:1716_PAYPAL:1537578291593093240>", id: "1537578291593093240" },
+    MONEY:      { text: "<:63043moneyspread:1537577805829636117>", id: "1537577805829636117" },
+    PREMIUM:    { text: "<:5647premiumicon:1533535330538360942>", id: "1533535330538360942" },
+    LOCK:       { text: "<a:lockicon:1533535370787033198>", id: "1533535370787033198" },
+    UPDATE:     { text: "<:update:1533535384674369777>", id: "1533535384674369777" },
+    LOADING:    { text: "<a:loadingicon:1533535386951749683>", id: "1533535386951749683" },
+    WARNING:    { text: "<:warningd:1533535400176386068>", id: "1533535400176386068" }
 };
 
 const CONFIG = {
     CATEGORY_ID: "1534953439908593857",
     LOGS_CHANNEL_ID: "1535026560896204922",
-
     ROLE_ONBOARDING: "1532058943570837656",
-    ROLES_STAFF: [
-        "1532015045800628244", 
-        "1532015039806963763"
-    ],
-    ROLES_MEMBER: [
-        "1532014889848143964",
-        "1532014895657128098"
-    ],
-
+    ROLES_STAFF: ["1532015045800628244", "1532015039806963763"],
+    ROLES_MEMBER: ["1532014889848143964", "1532014895657128098"],
     ROLES_NOTIFS: {
         anim: ["1532014836463177739", "1532014855698120794"],
         sondage: ["1532014839659237587", "1532014855698120794"],
@@ -61,15 +51,25 @@ const CONFIG = {
         reseaux: ["1532014849582829659", "1532014855698120794"],
         annonces: ["1532014852724363416", "1532014855698120794"]
     },
-
     CEO: { name: "HLR Logs" },
-    DG: { name: "HLR Raxeur" }
+    DG: { name: "HLR Raxeur" },
+    TIMEOUT_MS: 900_000 // 15 minutes par étape
 };
+
+// Désactiver proprement les composants d'un message
+async function disableComponents(msg) {
+    if (!msg || !msg.editable) return;
+    const disabledRows = msg.components.map(row => {
+        const newRow = ActionRowBuilder.from(row);
+        newRow.components.forEach(c => c.setDisabled(true));
+        return newRow;
+    });
+    await msg.edit({ components: disabledRows }).catch(() => {});
+}
 
 module.exports = (client) => {
 
     client.on("guildMemberAdd", async (member) => {
-
         try {
             await member.roles.add(CONFIG.ROLE_ONBOARDING).catch(() => {});
 
@@ -82,9 +82,7 @@ module.exports = (client) => {
             const dgAvatarPath = path.join(__dirname, "..", "assets", "dg.png");
             const logoPath = path.join(__dirname, "..", "assets", "logo.png");
 
-            // =====================================================
-            // PERMISSIONS SECURISEES
-            // =====================================================
+            // Permissions
             const permissions = [
                 {
                     id: member.guild.id,
@@ -121,21 +119,69 @@ module.exports = (client) => {
                 permissionOverwrites: permissions
             });
 
+            // Écouteur de départ du membre
+            const leaveListener = async (leftMember) => {
+                if (leftMember.id === member.id) {
+                    client.off("guildMemberRemove", leaveListener);
+                    await channel.delete().catch(() => {});
+                }
+            };
+            client.on("guildMemberRemove", leaveListener);
+
+            // Fonction centralisée de finalisation
+            async function finalizeOnboarding({ isBypass = false, staffUser = null, forceTag = false }) {
+                client.off("guildMemberRemove", leaveListener);
+
+                const applyTag = isBypass ? forceTag : shouldAddTag;
+
+                if (applyTag && member.manageable) {
+                    await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
+                }
+
+                const finalRolesToAdd = [...new Set([
+                    ...CONFIG.ROLES_MEMBER,
+                    ...(isBypass ? [...CONFIG.ROLES_NOTIFS.annonces, ...CONFIG.ROLES_NOTIFS.anim] : selectedNotifs)
+                ])];
+
+                await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
+                await member.roles.add(finalRolesToAdd).catch(() => {});
+
+                const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
+                if (logsChannel) {
+                    const embedLog = new EmbedBuilder()
+                        .setColor(isBypass ? "#FFA500" : "#22C55E")
+                        .setTitle(isBypass ? `${EMOJIS.WARNING.text} ONBOARDING — Validation Manuelle (Bypass)` : `${EMOJIS.CERTIFIED.text} ONBOARDING — Membre Validé`)
+                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                        .addFields(
+                            { name: "👤 Membre Concerné", value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
+                            { name: isBypass ? "👑 Modérateur" : "🆔 ID Unique", value: isBypass ? `<@${staffUser.id}>` : `\`${member.id}\``, inline: true },
+                            { name: "🎯 Profil / Intentions", value: selectedIntent, inline: false },
+                            { name: "🎮 Jeu Principal", value: selectedGame, inline: true },
+                            { name: "🏷️ Tag Affiché", value: applyTag ? "`Oui [HLR]`" : "`Non`", inline: true },
+                            { name: "🔔 Rôles Notifs", value: `\`${selectedNotifs.length} rôle(s)\``, inline: true }
+                        )
+                        .setFooter({ text: "HeLoRiA Esport System", iconURL: member.guild.iconURL() })
+                        .setTimestamp();
+
+                    await logsChannel.send({ embeds: [embedLog] }).catch(() => {});
+                }
+
+                await channel.send(isBypass ? `✅ **Accès accordé manuellement par <@${staffUser.id}> !** Fermeture du salon dans 5 secondes...` : `# ${EMOJIS.CERTIFIED.text} Bienvenue officiellement chez HeLoRiA <@${member.id}> !\nFermeture du salon dans 5 secondes...`);
+
+                setTimeout(async () => {
+                    await channel.delete().catch(() => {});
+                }, 5000);
+            }
+
+            // Webhooks
             const ceoBuffer = fs.existsSync(ceoAvatarPath) ? fs.readFileSync(ceoAvatarPath) : null;
             const dgBuffer = fs.existsSync(dgAvatarPath) ? fs.readFileSync(dgAvatarPath) : null;
 
-            const webhookCEO = await channel.createWebhook({
-                name: CONFIG.CEO.name,
-                avatar: ceoBuffer
-            });
-
-            const webhookDG = await channel.createWebhook({
-                name: CONFIG.DG.name,
-                avatar: dgBuffer
-            });
+            const webhookCEO = await channel.createWebhook({ name: CONFIG.CEO.name, avatar: ceoBuffer });
+            const webhookDG = await channel.createWebhook({ name: CONFIG.DG.name, avatar: dgBuffer });
 
             // =====================================================
-            // PANNEAU ADMINISTRATION / STAFF BYPASS
+            // PANNEAU STAFF BYPASS
             // =====================================================
             const staffRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
@@ -150,9 +196,7 @@ module.exports = (client) => {
                 components: [staffRow]
             });
 
-            const staffCollector = staffMsg.createMessageComponentCollector({
-                componentType: ComponentType.Button
-            });
+            const staffCollector = staffMsg.createMessageComponentCollector({ componentType: ComponentType.Button });
 
             staffCollector.on("collect", async (i) => {
                 const isStaff = CONFIG.ROLES_STAFF.some(id => i.member.roles.cache.has(id)) || i.member.permissions.has(PermissionFlagsBits.Administrator);
@@ -184,54 +228,19 @@ module.exports = (client) => {
             staffChoiceCollector.on("collect", async (i) => {
                 await i.deferUpdate();
                 const forceTag = (i.customId === "staff_tag_yes");
-
-                if (forceTag) {
-                    await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
-                }
-
-                const defaultNotifs = [...CONFIG.ROLES_NOTIFS.annonces, ...CONFIG.ROLES_NOTIFS.anim];
-                const finalRolesToAdd = [...new Set([...CONFIG.ROLES_MEMBER, ...defaultNotifs])];
-
-                await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
-                await member.roles.add(finalRolesToAdd).catch(() => {});
-
-                await channel.send(`✅ **Accès accordé manuellement par <@${i.user.id}> !** Fermeture du salon dans 5 secondes...`);
-
-                const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
-                if (logsChannel) {
-                    const embedLog = new EmbedBuilder()
-                        .setColor("#FFA500")
-                        .setTitle(`${EMOJIS.WARNING.text} ONBOARDING — Validation Manuelle (Bypass)`)
-                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                        .addFields(
-                            { name: "👤 Membre Concerné", value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
-                            { name: "👑 Modérateur", value: `<@${i.user.id}>`, inline: true },
-                            { name: "🏷️ Tag Structure", value: forceTag ? "`Activé [HLR]`" : "`Désactivé`", inline: true }
-                        )
-                        .setFooter({ text: "HeLoRiA Esport System", iconURL: member.guild.iconURL() })
-                        .setTimestamp();
-
-                    await logsChannel.send({ embeds: [embedLog] }).catch(() => {});
-                }
-
-                setTimeout(async () => {
-                    await channel.delete().catch(() => {});
-                }, 5000);
+                await finalizeOnboarding({ isBypass: true, staffUser: i.user, forceTag });
             });
 
             // =====================================================
-            // 1. BIENVENUE & PRESENTATION OFFICIELLE
+            // 1. BIENVENUE & PRESENTATION
             // =====================================================
-            await webhookCEO.send({
-                content: `# ${EMOJIS.HLR_WIN.text} Bienvenue chez Team HeLoRiA, <@${member.id}> !`
-            });
+            await webhookCEO.send({ content: `# ${EMOJIS.HLR_WIN.text} Bienvenue chez Team HeLoRiA, <@${member.id}> !` });
 
             const filesSend = [];
             let logoAttachmentName = null;
 
             if (fs.existsSync(logoPath)) {
-                const logoAttachment = new AttachmentBuilder(logoPath, { name: "logo.png" });
-                filesSend.push(logoAttachment);
+                filesSend.push(new AttachmentBuilder(logoPath, { name: "logo.png" }));
                 logoAttachmentName = "attachment://logo.png";
             }
 
@@ -245,17 +254,12 @@ module.exports = (client) => {
                     `🌐 **Soutenir la structure :** N'hésite pas à consulter nos salons d'information !`
                 );
 
-            if (logoAttachmentName) {
-                embedPres.setThumbnail(logoAttachmentName);
-            }
+            if (logoAttachmentName) embedPres.setThumbnail(logoAttachmentName);
 
-            await webhookCEO.send({
-                embeds: [embedPres],
-                files: filesSend
-            });
+            await webhookCEO.send({ embeds: [embedPres], files: filesSend });
 
             // =====================================================
-            // 2. CHOIX DU PROFIL (INTENTION)
+            // 2. CHOIX DU PROFIL
             // =====================================================
             const intentMenu = new StringSelectMenuBuilder()
                 .setCustomId("select_intent")
@@ -275,11 +279,14 @@ module.exports = (client) => {
 
             const intentCollector = msgIntent.createMessageComponentCollector({
                 componentType: ComponentType.StringSelect,
-                filter: i => i.user.id === member.id
+                filter: i => i.user.id === member.id,
+                time: CONFIG.TIMEOUT_MS
             });
 
             intentCollector.on("collect", async (i) => {
                 await i.deferUpdate();
+                await disableComponents(msgIntent);
+
                 const choice = i.values[0];
                 let intentAnswer = "";
 
@@ -301,10 +308,15 @@ module.exports = (client) => {
                 }
 
                 await webhookCEO.send({ content: intentAnswer });
-                await msgIntent.delete().catch(() => {});
-                intentCollector.stop();
-
+                intentCollector.stop("completed");
                 startDGStep();
+            });
+
+            intentCollector.on("end", (_, reason) => {
+                if (reason === "time") {
+                    channel.send("⚠️ Temps écoulé pour l'onboarding. Le salon sera fermé.").catch(() => {});
+                    setTimeout(() => channel.delete().catch(() => {}), 5000);
+                }
             });
 
             // =====================================================
@@ -342,21 +354,26 @@ module.exports = (client) => {
 
                 const gameCollector = msgGame.createMessageComponentCollector({
                     componentType: ComponentType.StringSelect,
-                    filter: i => i.user.id === member.id
+                    filter: i => i.user.id === member.id,
+                    time: CONFIG.TIMEOUT_MS
                 });
 
                 gameCollector.on("collect", async (i) => {
                     await i.deferUpdate();
+                    await disableComponents(msgGame);
+
                     selectedGame = i.values[0];
+                    await webhookDG.send({ content: `✅ C'est bien noté pour **${selectedGame}** ! Tu vas pouvoir échanger avec nos joueurs très rapidement.` });
 
-                    await webhookDG.send({
-                        content: `✅ C'est bien noté pour **${selectedGame}** ! Tu vas pouvoir échanger avec nos joueurs très rapidement.`
-                    });
-
-                    await msgGame.delete().catch(() => {});
-                    gameCollector.stop();
-
+                    gameCollector.stop("completed");
                     startNotifStep();
+                });
+
+                gameCollector.on("end", (_, reason) => {
+                    if (reason === "time") {
+                        channel.send("⚠️ Temps écoulé pour l'onboarding. Le salon sera fermé.").catch(() => {});
+                        setTimeout(() => channel.delete().catch(() => {}), 5000);
+                    }
                 });
             }
 
@@ -385,18 +402,26 @@ module.exports = (client) => {
 
                 const notifCollector = msgNotif.createMessageComponentCollector({
                     componentType: ComponentType.StringSelect,
-                    filter: i => i.user.id === member.id
+                    filter: i => i.user.id === member.id,
+                    time: CONFIG.TIMEOUT_MS
                 });
 
                 notifCollector.on("collect", async (i) => {
                     await i.deferUpdate();
+                    await disableComponents(msgNotif);
+
                     selectedNotifs = i.values.flatMap(notif => CONFIG.ROLES_NOTIFS[notif] || []);
                     selectedNotifs = [...new Set(selectedNotifs)];
 
-                    await msgNotif.delete().catch(() => {});
-                    notifCollector.stop();
-
+                    notifCollector.stop("completed");
                     startTagStep();
+                });
+
+                notifCollector.on("end", (_, reason) => {
+                    if (reason === "time") {
+                        channel.send("⚠️ Temps écoulé pour l'onboarding. Le salon sera fermé.").catch(() => {});
+                        setTimeout(() => channel.delete().catch(() => {}), 5000);
+                    }
                 });
             }
 
@@ -416,23 +441,28 @@ module.exports = (client) => {
 
                 const tagCollector = msgTag.createMessageComponentCollector({
                     componentType: ComponentType.Button,
-                    filter: i => i.user.id === member.id
+                    filter: i => i.user.id === member.id,
+                    time: CONFIG.TIMEOUT_MS
                 });
 
                 tagCollector.on("collect", async (i) => {
                     await i.deferUpdate();
+                    await disableComponents(msgTag);
 
                     if (i.customId === "tag_yes") {
                         shouldAddTag = true;
-                        await webhookCEO.send({
-                            content: `✅ Un énorme merci pour ton soutien ! Porter nos couleurs démontre ta fierté envers **HeLoRiA**.`
-                        });
+                        await webhookCEO.send({ content: `✅ Un énorme merci pour ton soutien ! Porter nos couleurs démontre ta fierté envers **HeLoRiA**.` });
                     }
 
-                    await msgTag.delete().catch(() => {});
-                    tagCollector.stop();
-
+                    tagCollector.stop("completed");
                     startCaptchaStep();
+                });
+
+                tagCollector.on("end", (_, reason) => {
+                    if (reason === "time") {
+                        channel.send("⚠️ Temps écoulé pour l'onboarding. Le salon sera fermé.").catch(() => {});
+                        setTimeout(() => channel.delete().catch(() => {}), 5000);
+                    }
                 });
             }
 
@@ -467,56 +497,26 @@ module.exports = (client) => {
 
                 const captchaCollector = msgCaptcha.createMessageComponentCollector({
                     componentType: ComponentType.Button,
-                    filter: i => i.user.id === member.id
+                    filter: i => i.user.id === member.id,
+                    time: CONFIG.TIMEOUT_MS
                 });
 
                 captchaCollector.on("collect", async (i) => {
                     if (i.customId === "captcha_ok") {
                         await i.deferUpdate();
-                        await msgCaptcha.delete().catch(() => {});
+                        await disableComponents(msgCaptcha);
 
-                        if (shouldAddTag) {
-                            await member.setNickname(`HLR ${member.displayName}`.substring(0, 32)).catch(() => {});
-                        }
-
-                        const finalRolesToAdd = [...new Set([...CONFIG.ROLES_MEMBER, ...selectedNotifs])];
-
-                        await member.roles.remove(CONFIG.ROLE_ONBOARDING).catch(() => {});
-                        await member.roles.add(finalRolesToAdd).catch(() => {});
-
-                        await webhookCEO.send({
-                            content: `# ${EMOJIS.CERTIFIED.text} Bienvenue officiellement chez HeLoRiA <@${member.id}> !\nTes rôles ont été attribués avec succès. Préparation du nettoyage du salon...`
-                        });
-
-                        const logsChannel = member.guild.channels.cache.get(CONFIG.LOGS_CHANNEL_ID);
-                        if (logsChannel) {
-                            const embedLog = new EmbedBuilder()
-                                .setColor("#22C55E")
-                                .setTitle(`${EMOJIS.CERTIFIED.text} ONBOARDING — Membre Validé`)
-                                .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                                .addFields(
-                                    { name: "👤 Membre", value: `<@${member.id}> (\`${member.user.tag}\`)`, inline: true },
-                                    { name: "🆔 ID Unique", value: `\`${member.id}\``, inline: true },
-                                    { name: "🎯 Profil / Intentions", value: selectedIntent, inline: false },
-                                    { name: "🎮 Jeu Principal", value: selectedGame, inline: true },
-                                    { name: "🏷️ Tag Affiché", value: shouldAddTag ? "`Oui [HLR]`" : "`Non`", inline: true },
-                                    { name: "🔔 Rôles Notifs", value: `\`${selectedNotifs.length} rôle(s)\``, inline: true }
-                                )
-                                .setFooter({ text: "HeLoRiA Esport System", iconURL: member.guild.iconURL() })
-                                .setTimestamp();
-
-                            await logsChannel.send({ embeds: [embedLog] }).catch(() => {});
-                        }
-
-                        setTimeout(async () => {
-                            await channel.delete().catch(() => {});
-                        }, 5000);
-
+                        captchaCollector.stop("completed");
+                        await finalizeOnboarding({ isBypass: false });
                     } else {
-                        await i.reply({
-                            content: `❌ Calcul incorrect, essaie à nouveau !`,
-                            ephemeral: true
-                        });
+                        await i.reply({ content: `❌ Calcul incorrect, essaie à nouveau !`, ephemeral: true });
+                    }
+                });
+
+                captchaCollector.on("end", (_, reason) => {
+                    if (reason === "time") {
+                        channel.send("⚠️ Temps écoulé pour l'onboarding. Le salon sera fermé.").catch(() => {});
+                        setTimeout(() => channel.delete().catch(() => {}), 5000);
                     }
                 });
             }
@@ -524,7 +524,5 @@ module.exports = (client) => {
         } catch (err) {
             console.error("Erreur durant l'onboarding :", err);
         }
-
     });
-
 };
